@@ -2371,7 +2371,8 @@ endif
 # Vendor kernels (e.g. Armbian/ophub builds) may carry this backport ahead of
 # a LINUX_VERSION_CODE bump, so detect it from the actual target headers
 # instead of trusting the version macro.
-CFG80211_STA_WDEV_OPS := $(shell grep -q 'int.*(\*add_key)(struct wiphy \*wiphy, struct wireless_dev' $(KSRC)/include/net/cfg80211.h 2>/dev/null && echo y)
+CFG80211_ADD_KEY_WDEV_PATTERN := int.*(\*add_key)(struct wiphy \*wiphy, struct wireless_dev
+CFG80211_STA_WDEV_OPS := $(shell grep -q '$(CFG80211_ADD_KEY_WDEV_PATTERN)' $(KSRC)/include/net/cfg80211.h 2>/dev/null && echo y)
 ifeq ($(CFG80211_STA_WDEV_OPS), y)
 ccflags-y += -DCFG80211_STA_WDEV_OPS
 endif
