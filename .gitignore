@@ -1,0 +1,14 @@
+*.o
+*.o.cmd
+*.ko
+*.ko.cmd
+*.mod
+*.mod.c
+*.mod.cmd
+.*.cmd
+.tmp_versions/
+Module.symvers
+Module.markers
+modules.order
+*~
+.DS_Store
