@@ -2,26 +2,17 @@ name: Build
 
 on: workflow_dispatch
 
-jobs:
-  fetchKernelData:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
-    steps:
-      - id: set-matrix
-        run: |
-          JSON=$(curl https://www.kernel.org/releases.json)
-          VERSIONSARRAY=$(echo $JSON | jq -c '[.releases[] | {version: .version, moniker: .moniker} | select(.moniker != "linux-next") | .version]')
-          echo ::set-output name=matrix::${VERSIONSARRAY}
+permissions:
+  contents: write
 
+jobs:
   build:
-    needs: fetchKernelData
     runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
       matrix:
-        version: ${{fromJson(needs.fetchKernelData.outputs.matrix)}}
-        #version: [6.18.41, 6.6.0]
+        # Target kernel spesifik untuk STB HG680P (Armbian Resolute).
+        version: [6.18.41]
     steps:
       - name: download-Kernel
         env:
@@ -44,8 +35,84 @@ jobs:
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 14
           KVER=$(basename $(ls -d /usr/src/linux-headers-*) | sed 's/linux-headers-//')
           echo "KVER=$KVER" >> $GITHUB_ENV
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         if: env.SKIP != '1'
       - name: build
+        id: build
         if: env.SKIP != '1'
         run: make -j$(nproc) ARCH=arm64 KSRC=/usr/src/linux-headers-$KVER CC=cc
+      - name: record result
+        if: always()
+        run: |
+          mkdir -p result
+          if [ "$SKIP" = "1" ]; then
+            STATUS="skipped"
+          elif [ "${{ steps.build.outcome }}" = "success" ]; then
+            STATUS="success"
+          else
+            STATUS="failed"
+          fi
+          printf '{"version": "%s", "status": "%s"}\n' "${{ matrix.version }}" "$STATUS" > result/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: result-${{ matrix.version }}
+          path: result/result.json
+
+  update-readme:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          path: results
+          merge-multiple: true
+      - name: build compatibility table
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          ROWS=$(for f in results/*.json; do
+            VERSION=$(jq -r .version "$f")
+            STATUS=$(jq -r .status "$f")
+            case "$STATUS" in
+              success) LABEL="✅ Berhasil" ;;
+              skipped) LABEL="⏭️ Dilewati (tidak ada build arm64)" ;;
+              *) LABEL="❌ Gagal" ;;
+            esac
+            echo "$VERSION|$LABEL|$DATE"
+          done | sort -t'|' -k1,1 -Vr)
+          {
+            echo "<!-- KERNEL_COMPAT_TABLE_START -->"
+            echo "| Versi Kernel (arm64) | Status | Terakhir Dicek |"
+            echo "|---|---|---|"
+            echo "$ROWS" | awk -F'|' '{print "| "$1" | "$2" | "$3" |"}'
+            echo "<!-- KERNEL_COMPAT_TABLE_END -->"
+          } > table.md
+      - name: update README
+        run: |
+          python3 - <<'EOF'
+          import re
+
+          with open("README.md") as f:
+              content = f.read()
+          with open("table.md") as f:
+              table = f.read().strip()
+
+          pattern = re.compile(
+              r"<!-- KERNEL_COMPAT_TABLE_START -->.*<!-- KERNEL_COMPAT_TABLE_END -->",
+              re.S,
+          )
+          content = pattern.sub(table, content)
+
+          with open("README.md", "w") as f:
+              f.write(content)
+          EOF
+      - name: commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git diff --cached --quiet || git commit -m "chore: update kernel compatibility table [skip ci]"
+          git push
