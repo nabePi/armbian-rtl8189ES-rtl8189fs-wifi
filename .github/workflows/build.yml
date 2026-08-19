@@ -1,6 +1,6 @@
 name: Build
 
-on: [pull_request]
+on: workflow_dispatch
 
 jobs:
   fetchKernelData:
@@ -16,29 +16,36 @@ jobs:
 
   build:
     needs: fetchKernelData
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     strategy:
       fail-fast: false
       matrix:
         version: ${{fromJson(needs.fetchKernelData.outputs.matrix)}}
-        #version: [4.9.248, 4.4.248]
+        #version: [6.18.41, 6.6.0]
     steps:
       - name: download-Kernel
         env:
           VERSION: ${{matrix.version }}
         run: |
           KERNEL_URL=https://kernel.ubuntu.com/~kernel-ppa/mainline/
-          KERNEL_URL_DETAILS=$(wget --quiet -O - ${KERNEL_URL}v${VERSION}/ | grep -A8 "Build for amd64\|Test amd64")
-          ALL_DEB=$(echo "$KERNEL_URL_DETAILS" |  grep -m1 'all.deb' | cut -d '"' -f 2)
-          AMD64_DEB=$(echo "$KERNEL_URL_DETAILS" | grep -m1 "amd64.deb" | cut -d '"' -f 2)
-          [  -z "$ALL_DEB" ] && exit 1
-          [  -z "$AMD64_DEB" ] && exit 2
-          wget -nv ${KERNEL_URL}v${VERSION}/$AMD64_DEB
-          wget -nv ${KERNEL_URL}v${VERSION}/$ALL_DEB
-          sudo dpkg --force-all -i *.deb
+          PAGE=$(wget --quiet -O - ${KERNEL_URL}v${VERSION}/)
+          # arm64 mainline builds only ship a single "-generic" headers deb
+          # (no separate arch:all package like amd64 has), and also a "-64k"
+          # page-size variant we don't want (Armbian/HG680P uses 4k pages).
+          HEADERS_DEB=$(echo "$PAGE" | grep -o 'arm64/linux-headers-[^"]*-generic_[^"]*_arm64\.deb' | grep -v -- '-64k' | head -n1)
+          if [ -z "$HEADERS_DEB" ]; then
+            echo "No arm64 mainline build available for v${VERSION}, skipping"
+            echo "SKIP=1" >> $GITHUB_ENV
+            exit 0
+          fi
+          wget -nv ${KERNEL_URL}v${VERSION}/$HEADERS_DEB
+          sudo dpkg --force-all -i $(basename $HEADERS_DEB)
           sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 14
           sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 14
-          echo "KVER=$(echo $ALL_DEB | cut -d '_' -f 2 | rev | cut -c14- | rev)-generic" >> $GITHUB_ENV
+          KVER=$(basename $(ls -d /usr/src/linux-headers-*) | sed 's/linux-headers-//')
+          echo "KVER=$KVER" >> $GITHUB_ENV
       - uses: actions/checkout@v2
+        if: env.SKIP != '1'
       - name: build
-        run: make KVER=$KVER CONFIG_PLATFORM_I386_PC=y CC=cc
+        if: env.SKIP != '1'
+        run: make -j$(nproc) ARCH=arm64 KSRC=/usr/src/linux-headers-$KVER CC=cc

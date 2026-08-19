@@ -92,6 +92,22 @@ Supaya tidak perlu menjalankan `modprobe 8189fs` setiap kali STB di-restart, tam
 echo "8189fs" | sudo tee -a /etc/modules
 ```
 
+## CI: Test Build Otomatis (GitHub Actions)
+
+Repo ini punya workflow GitHub Actions di `.github/workflows/build.yml` untuk memastikan source driver ini tetap bisa di-*compile* terhadap berbagai versi kernel Linux **arm64** (arsitektur yang sama dengan STB HG680P).
+
+- Runner yang dipakai adalah **arm64 native** (`ubuntu-24.04-arm`), jadi build dilakukan native (bukan cross-compile).
+- Untuk setiap versi kernel dari daftar rilis di kernel.org, workflow ini akan mendownload header kernel arm64 (varian `-generic`, 4k page size, sesuai Armbian) dari mainline PPA Ubuntu, lalu menjalankan build yang sama seperti perintah di bagian [Cara Build](#cara-build) (`make ARCH=arm64 KSRC=... CC=cc`).
+- Jika suatu versi kernel tidak punya build arm64 di mainline PPA, job untuk versi tersebut otomatis di-skip (bukan dianggap gagal).
+
+**Cara menjalankan:** workflow ini di-trigger **manual**, tidak otomatis jalan saat push atau pull request. Untuk menjalankannya:
+
+1. Buka tab **Actions** di halaman GitHub repo ini.
+2. Pilih workflow **Build** di sidebar kiri.
+3. Klik tombol **Run workflow**.
+
+Gunakan ini untuk mengecek apakah source driver masih kompatibel setelah ada perubahan kode, atau untuk mengecek kompatibilitas terhadap rilis kernel arm64 terbaru.
+
 ## Troubleshooting
 
 - **Build gagal / error path kernel**: pastikan path `/lib/modules/$(uname -r)/build` benar-benar ada. Jika tidak ada, berarti header kernel untuk versi tersebut belum terpasang di Armbian.
