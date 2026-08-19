@@ -1,6 +1,6 @@
-# Driver WiFi RTL8189ES/RTL8189FS untuk STB HG680P (Armbian)
+# Driver WiFi RTL8189ES/RTL8189FS untuk STB HG680P (Armbian Resolute)
 
-Repo ini berisi source code driver WiFi Realtek **RTL8189ES / RTL8189FS** yang sudah disesuaikan agar bisa dibuild dan berjalan di STB **HG680P** yang menjalankan **Armbian** dengan kernel versi **6.18.41**.
+Repo ini berisi source code driver WiFi Realtek **RTL8189ES / RTL8189FS** yang sudah disesuaikan agar bisa dibuild dan berjalan di STB **HG680P** yang menjalankan **Armbian Resolute** dengan kernel versi **6.18.41**.
 
 Driver bawaan vendor biasanya tidak kompatibel dengan kernel modern (Armbian mainline), sehingga source di repo ini sudah dipatch supaya cocok dengan API `cfg80211` terbaru dan bisa dibuild ulang (di-*compile* sendiri) sebagai kernel module (`.ko`).
 
