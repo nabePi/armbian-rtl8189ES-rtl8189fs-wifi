@@ -4,6 +4,22 @@ Repo ini berisi source code driver WiFi Realtek **RTL8189ES / RTL8189FS** yang s
 
 Driver bawaan vendor biasanya tidak kompatibel dengan kernel modern (Armbian mainline), sehingga source di repo ini sudah dipatch supaya cocok dengan API `cfg80211` terbaru dan bisa dibuild ulang (di-*compile* sendiri) sebagai kernel module (`.ko`).
 
+## Image Armbian yang Digunakan
+
+Driver ini dites di atas image Armbian Resolute untuk Amlogic S905 (chip yang dipakai STB HG680P), build dari project [ophub/amlogic-s9xxx-armbian](https://github.com/ophub/amlogic-s9xxx-armbian):
+
+**[Armbian_26.08.0_amlogic_s905_resolute_6.18.41_server_2026.08.01.img.gz](https://github.com/ophub/amlogic-s9xxx-armbian/releases/download/Armbian_resolute_arm64_server_2026.08/Armbian_26.08.0_amlogic_s905_resolute_6.18.41_server_2026.08.01.img.gz)**
+
+| Detail | Keterangan |
+|--------|------------|
+| Distro | Armbian 26.08.0 (Resolute) |
+| Board/SoC | Amlogic S905 |
+| Kernel | 6.18.41 |
+| Varian | server |
+| Arsitektur | arm64 |
+
+Pastikan versi Armbian/kernel yang kamu pakai di STB sesuai (atau minimal sama major.minor kernel-nya) dengan image di atas supaya driver ini bisa dibuild dan berjalan dengan benar.
+
 ## Prasyarat: STB Harus Sudah Menjalankan Armbian
 
 Proses build/compile dilakukan **langsung di dalam STB HG680P**, bukan di komputer lain, jadi STB harus sudah berjalan dengan Armbian terlebih dahulu. Ada dua kondisi yang mungkin:
