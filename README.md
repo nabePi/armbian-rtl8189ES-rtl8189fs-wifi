@@ -4,6 +4,18 @@ Repo ini berisi source code driver WiFi Realtek **RTL8189ES / RTL8189FS** yang s
 
 Driver bawaan vendor biasanya tidak kompatibel dengan kernel modern (Armbian mainline), sehingga source di repo ini sudah dipatch supaya cocok dengan API `cfg80211` terbaru dan bisa dibuild ulang (di-*compile* sendiri) sebagai kernel module (`.ko`).
 
+## Prasyarat: STB Harus Sudah Menjalankan Armbian
+
+Proses build/compile dilakukan **langsung di dalam STB HG680P**, bukan di komputer lain, jadi STB harus sudah berjalan dengan Armbian terlebih dahulu. Ada dua kondisi yang mungkin:
+
+1. **Armbian di-boot dari USB Flashdisk / MicroSD**
+   Masuk ke STB melalui Armbian yang di-boot dari media eksternal (USB flashdisk atau microSD), lalu login ke sistem tersebut (via SSH atau langsung terminal) sebelum lanjut ke langkah build di bawah.
+
+2. **Armbian sudah ter-install permanen di eMMC STB**
+   Jika Armbian sudah di-install ke penyimpanan internal (eMMC) STB, cukup nyalakan STB seperti biasa lalu login (SSH/terminal) ke sistem Armbian tersebut.
+
+Pastikan sudah masuk (login) ke shell Armbian di STB sebelum melanjutkan ke langkah build.
+
 ## Kebutuhan
 
 Sebelum build, pastikan di STB HG680P sudah tersedia:
