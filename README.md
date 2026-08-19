@@ -113,7 +113,7 @@ Setelah workflow selesai, tabel di bawah ini akan **otomatis diperbarui** (commi
 <!-- KERNEL_COMPAT_TABLE_START -->
 | Versi Kernel (arm64) | Status | Terakhir Dicek |
 |---|---|---|
-| _(belum pernah dijalankan)_ | - | - |
+| 6.18.41 | ✅ Berhasil | 2026-08-19 |
 <!-- KERNEL_COMPAT_TABLE_END -->
 
 ## Troubleshooting
